@@ -1,0 +1,41 @@
+# .NET
+bin/
+obj/
+artifacts/
+*.exe
+*.dll
+*.pdb
+*.dll.config
+*.deps.json
+*.runtimeconfig.json
+*.xml
+*.nupkg
+*.snupkg
+*.zip
+*.msi
+
+# IDE
+.vs/
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Env
+.env
+.env.local
+
+# Build
+[Bb]uild/
+[Rr]elease/
+[Dd]ebug/
+publish/
+x64/
+x86/
+arm64/
