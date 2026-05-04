@@ -33,8 +33,7 @@ builder.Services.AddApi();
 builder.Services.AddSignalR();
 builder.Services.AddEndpointsApiExplorer();
 var app = builder.Build();
-app.MapHub<MetricsHub>("/hubs/metrics");
-app.MapHub<WorkerControlHub>("/hubs/workers");
+app.MapHub<DashboardHub>("/hubs/dashboard");
 app.UseHttpsRedirection();
 app.MapControllers();
 

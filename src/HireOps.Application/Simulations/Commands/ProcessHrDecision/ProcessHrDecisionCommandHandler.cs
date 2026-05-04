@@ -1,26 +1,24 @@
-﻿using MediatR;
+﻿using HireOps.Domain.Interfaces;
+using MediatR;
 using Microsoft.Extensions.Logging;
 
 namespace HireOps.Application.Simulations.Commands.ProcessHrDecision;
 
-public class ProcessHrDecisionCommandHandler : IRequestHandler<ProcessHrDecisionCommand>
+public class ProcessHrDecisionCommandHandler(
+    ILogger<ProcessHrDecisionCommandHandler> logger,
+    IChaosService chaosService)
+    : IRequestHandler<ProcessHrDecisionCommand>
 {
-    private readonly ILogger<ProcessHrDecisionCommandHandler> _logger;
-
-    public ProcessHrDecisionCommandHandler(ILogger<ProcessHrDecisionCommandHandler> logger)
-    {
-        _logger = logger;
-    }
-
     public async Task Handle(ProcessHrDecisionCommand request, CancellationToken ct)
     {
+        await chaosService.SimulateAsync(ct);
         if (request.Recommended)
         {
-            _logger.LogInformation("🤝 HR HIRED applicant {ApplicantId}", request.ApplicantId);
+            logger.LogInformation("🤝 HR HIRED applicant {ApplicantId}", request.ApplicantId);
         }
         else
         {
-            _logger.LogInformation("❌ HR REJECTED applicant {ApplicantId}", request.ApplicantId);
+            logger.LogInformation("❌ HR REJECTED applicant {ApplicantId}", request.ApplicantId);
         }
         await Task.CompletedTask;
     }

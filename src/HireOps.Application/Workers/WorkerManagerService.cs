@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace HireOps.Application.Workers;
 
-public class WorkerManagerService
+public class WorkerManagerService : IWorkerManagerService
 {
     private readonly IRabbitMqService _rabbitMq;
     private readonly ILogger<WorkerManagerService> _logger;
@@ -65,7 +65,8 @@ public class WorkerManagerService
     /// <summary>
     /// Удаляет одного воркера с очереди (по тегу или последний).
     /// </summary>
-    public async Task<bool> RemoveWorkerAsync(string queue, string? consumerTag = null, CancellationToken ct = default)
+    public async Task<bool> RemoveWorkerAsync(string queue, string? consumerTag = null, 
+        CancellationToken ct = default)
     {
         if (!_activeConsumers.TryGetValue(queue, out var tags) || tags.Count == 0)
             return false;

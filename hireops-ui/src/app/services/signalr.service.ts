@@ -5,6 +5,7 @@ export interface Metrics {
   queueDepth: number;
   latency: number;
   processedPerSec: number;
+  processedTotal: number;
   workers: Record<string, number>;
   throughput: Record<string, number>;
 }
@@ -21,7 +22,7 @@ export class SignalrService {
   // 🔹 Инициализация с авто-реконнектом
   connect(baseUrl: string) {
     this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(`/hubs/metrics`, {
+      .withUrl(`/hubs/dashboard`, {
         transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling
       })
       .withAutomaticReconnect([0, 2000, 5000, 10000]) // Переподключение с экспоненциальной задержкой

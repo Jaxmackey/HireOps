@@ -1,41 +1,94 @@
 <div class="min-h-screen bg-gray-900 text-white p-6">
   <header class="mb-8">
     <h1 class="text-3xl font-bold">🎮 HireOps Simulator</h1>
-    <p class="text-gray-400">High-load recruitment pipeline demo</p>
+    <p class="text-gray-400">Демонстрация работы высоконагруженной системы найма</p>
   </header>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Левая колонка: Управление -->
     <div class="space-y-6">
-      <app-worker-controls />
+
+      <!-- 🔹 Переименованный компонент -->
+      <app-team-controls />
 
       <!-- Кнопки запуска волны -->
       <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
-        <h3 class="text-lg font-semibold mb-4">🚀 Start Wave</h3>
+        <h3 class="text-lg font-semibold mb-4">🚀 Запустить поток откликов</h3>
+        <p class="text-sm text-gray-400 mb-3">
+          Имитируем всплеск интереса к вакансии
+        </p>
         <div class="flex gap-2">
           <button (click)="startWave(100)" class="flex-1 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded transition">
-            100 applicants
+            100 откликов
           </button>
           <button (click)="startWave(1000)" class="flex-1 bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded transition">
-            1000 applicants
+            1000 откликов
           </button>
         </div>
+      </div>
+
+      <!-- 🔹 Новая кнопка: Стресс-тест -->
+      <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+        <h3 class="text-lg font-semibold mb-4">⚡ Режимы работы</h3>
+        <button (click)="toggleChaosMode()"
+                [class.bg-orange-600]="chaosMode"
+                [class.bg-gray-600]="!chaosMode"
+                class="w-full px-4 py-2 rounded transition hover:opacity-90">
+          {{ chaosMode ? '🔥 Стресс-тест: ВКЛ' : '🧪 Включить стресс-тест' }}
+        </button>
+        <p class="text-xs text-gray-500 mt-2">
+          Имитирует сбои: задержки БД, потерю данных, пиковую нагрузку
+        </p>
       </div>
     </div>
 
-    <!-- Правая колонка: Метрики -->
+    <!-- Правая колонка: Метрики (понятным языком) -->
     <div class="lg:col-span-2 bg-gray-800 p-4 rounded-lg border border-gray-700">
-      <h3 class="text-lg font-semibold mb-4">📊 Real-time Metrics</h3>
-      <div class="grid grid-cols-2 gap-4 mb-4">
-        <div class="bg-gray-700 p-3 rounded">
-          <div class="text-sm text-gray-400">Queue Depth</div>
-          <div class="text-2xl font-mono">{{ signalr.metrics()?.queueDepth ?? 0 }}</div>
+      <h3 class="text-lg font-semibold mb-4">📊 Показатели эффективности</h3>
+
+      <!-- Карточки метрик -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div class="bg-gray-700 p-3 rounded text-center">
+          <div class="text-xs text-gray-400">В очереди</div>
+          <div class="text-2xl font-mono text-yellow-400">
+            {{ signalr.metrics()?.queueDepth ?? 0 }}
+          </div>
         </div>
-        <div class="bg-gray-700 p-3 rounded">
-          <div class="text-sm text-gray-400">Latency (ms)</div>
-          <div class="text-2xl font-mono">{{ signalr.metrics()?.latency ?? 0 }}</div>
+        <div class="bg-gray-700 p-3 rounded text-center">
+          <div class="text-xs text-gray-400">Время реакции</div>
+          <div class="text-2xl font-mono text-blue-400">
+            {{ signalr.metrics()?.latency ?? 0 }}мс
+          </div>
+        </div>
+        <div class="bg-gray-700 p-3 rounded text-center">
+          <div class="text-xs text-gray-400">Скорость</div>
+          <div class="text-2xl font-mono text-green-400">
+            {{ signalr.metrics()?.throughput ?? 0 }}/мин
+          </div>
+        </div>
+        <div class="bg-gray-700 p-3 rounded text-center">
+          <div class="text-xs text-gray-400">Всего обработано</div>
+          <div class="text-2xl font-mono text-purple-400">
+            {{ signalr.metrics()?.processedTotal ?? 0 }}
+          </div>
         </div>
       </div>
 
-      <!-- Место для будущего графика -->
+      <!-- Место для графика -->
       <div class="h-64 bg-gray-700 rounded flex items-center justify-center text-gray-500">
+        [📈 График: Скорость обработки во времени]
+      </div>
+
+      <!-- 🔹 Подсказка для техлидов (скрыта от HR по умолчанию) -->
+      <details class="mt-4 text-xs text-gray-500">
+        <summary class="cursor-pointer hover:text-gray-300">🔧 Технические детали (для разработчиков)</summary>
+        <div class="mt-2 space-y-1">
+          <div>• RabbitMQ: sim.pipeline (Direct exchange)</div>
+          <div>• SignalR: real-time metrics push</div>
+          <div>• Prefetch: {{ signalr.prefetch() }} messages/consumer</div>
+          <div>• Consumers: {{ signalr.workers() | json }}</div>
+        </div>
+      </details>
+    </div>
+  </div>
+</div>

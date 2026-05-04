@@ -4,13 +4,15 @@ using Microsoft.Extensions.Logging;
 
 namespace HireOps.Application.Simulations.Commands.ProcessScreening;
 
-public class ProcessScreeningCommandHandler(IRabbitMqService rabbitMq, ILogger<ProcessScreeningCommandHandler> logger)
+public class ProcessScreeningCommandHandler(IRabbitMqService rabbitMq, 
+    ILogger<ProcessScreeningCommandHandler> logger,
+    IChaosService chaosService)
     : IRequestHandler<ProcessScreeningCommand>
 {
     public async Task Handle(ProcessScreeningCommand request, CancellationToken ct)
     {
         logger.LogInformation("🔍 Screening applicant {ApplicantId}", request.ApplicantId);
-        
+        await chaosService.SimulateAsync(ct);   
         // 🔹 Имитация бизнес-логики
         await Task.Delay(100, ct);
         

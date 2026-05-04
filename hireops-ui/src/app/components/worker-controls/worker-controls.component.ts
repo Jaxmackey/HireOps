@@ -4,84 +4,100 @@ import { FormsModule } from '@angular/forms';
 import { SignalrService } from '../../services/signalr.service';
 
 @Component({
-  selector: 'app-worker-controls',
+  selector: 'app-team-controls', // 👈 Переименовали селектор
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
     <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
-      <h3 class="text-lg font-semibold mb-4 text-white">⚙️ Worker Controls</h3>
+      <h3 class="text-lg font-semibold mb-4 text-white">👥 Управление командой</h3>
 
+      <!-- Этап воронки -->
       <div class="mb-4">
-        <label class="block text-sm text-gray-400 mb-1">Queue</label>
+        <label class="block text-sm text-gray-400 mb-1">Этап отбора</label>
         <select
-          [(ngModel)]="selectedQueue"
-          class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white">
-          <option value="sim.received">sim.received</option>
-          <option value="sim.screening">sim.screening</option>
-          <option value="sim.tech">sim.tech</option>
+          [(ngModel)]="selectedStage"
+          class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+          title="Стадия воронки найма">
+          <option value="sim.received">📥 Входящие отклики</option>
+          <option value="sim.screening">🔍 Первичный скрининг</option>
+          <option value="sim.tech">💻 Техническое интервью</option>
+          <option value="sim.hr">🤝 Финальное решение</option>
         </select>
       </div>
 
+      <!-- Размер команды -->
       <div class="mb-4">
         <div class="flex justify-between text-sm text-gray-400 mb-1">
-          <span>Active Workers</span>
-          <span class="font-mono text-green-400">{{ workerCount }}</span>
+          <span>Рекрутеров на этапе</span>
+          <span class="font-mono text-green-400" title="Активные обработчики сообщений">
+            {{ agentCount }}
+          </span>
         </div>
         <div class="flex gap-2">
-          <button (click)="removeWorker()" [disabled]="workerCount <= 0"
-            class="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 px-3 py-2 rounded text-sm text-white transition">
-            ➖ Remove
+          <button (click)="removeAgent()" [disabled]="agentCount <= 1"
+            class="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 px-3 py-2 rounded text-sm text-white transition"
+            title="Уменьшить команду (освободить ресурс)">
+            ➖ Убрать
           </button>
-          <button (click)="addWorker()"
-            class="flex-1 bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-sm text-white transition">
-            ➕ Add
+          <button (click)="addAgent()"
+            class="flex-1 bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-sm text-white transition"
+            title="Добавить рекрутера (увеличить пропускную способность)">
+            ➕ Нанять
           </button>
         </div>
       </div>
 
+      <!-- Нагрузка на человека -->
       <div>
         <div class="flex justify-between text-sm text-gray-400 mb-1">
-          <span>Prefetch Count</span>
-          <span class="font-mono text-blue-400">{{ currentPrefetch }}</span>
+          <span>Задач на рекрутера</span>
+          <span class="font-mono text-blue-400" title="Prefetch: сколько резюме берёт в работу один человек">
+            {{ currentBatchSize }}
+          </span>
         </div>
-        <input type="range" min="1" max="100" [ngModel]="prefetchValue()" (change)="updatePrefetch($event)"
-          class="w-full accent-blue-500">
+        <input type="range" min="1" max="100" [ngModel]="batchSizeValue()" (change)="updateBatchSize($event)"
+          class="w-full accent-blue-500"
+          title="Баланс: больше задач → выше скорость, но выше риск перегрузки">
+        <p class="text-xs text-gray-500 mt-1">
+          💡 Меньше = тщательнее разбор, больше = выше скорость
+        </p>
       </div>
     </div>
   `
 })
-export class WorkerControlsComponent {
+export class TeamControlsComponent {
   private signalr = inject(SignalrService);
 
-  selectedQueue = 'sim.received';
-  prefetchValue = signal(10);
+  // 🔹 HR-названия переменных (внутри — технические ключи)
+  selectedStage = 'sim.received';
+  batchSizeValue = signal(10);
 
   constructor() {
-    // 🔹 React to SignalR updates automatically
     effect(() => {
-      this.prefetchValue.set(this.signalr.prefetch());
+      this.batchSizeValue.set(this.signalr.prefetch());
     });
   }
 
-  // 🔹 Геттеры автоматически пересчитываются при изменении сигналов
-  get workerCount(): number {
-    return this.signalr.workers()[this.selectedQueue] ?? 1;
+  // 🔹 Геттеры с переводом технических метрик
+  get agentCount(): number {
+    return this.signalr.workers()[this.selectedStage] ?? 1;
   }
 
-  get currentPrefetch(): number {
+  get currentBatchSize(): number {
     return this.signalr.prefetch();
   }
 
-  async addWorker() {
-    await this.signalr.addWorker(this.selectedQueue);
+  // 🔹 Методы с понятными названиями (внутри — технические вызовы)
+  async addAgent() {
+    await this.signalr.addWorker(this.selectedStage);
   }
 
-  async removeWorker() {
-    await this.signalr.removeWorker(this.selectedQueue);
+  async removeAgent() {
+    await this.signalr.removeWorker(this.selectedStage);
   }
 
-  updatePrefetch(event: Event) {
+  async updateBatchSize(event: Event) {
     const value = (event.target as HTMLInputElement).valueAsNumber;
-    this.signalr.updatePrefetch(value);
+    await this.signalr.updatePrefetch(value);
   }
 }
