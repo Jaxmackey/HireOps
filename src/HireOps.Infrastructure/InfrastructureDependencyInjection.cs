@@ -2,6 +2,7 @@ using HireOps.Domain.Interfaces;
 using HireOps.Infrastructure.Data;
 using HireOps.Infrastructure.Engines;
 using HireOps.Infrastructure.Repositories;
+using HireOps.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,6 +16,7 @@ public static class InfrastructureDependencyInjection
         services.AddDbContext<AppDbContext>(opt =>
             opt.UseNpgsql(config.GetConnectionString("Default")));
 
+        services.AddSingleton<IRabbitMqService, RabbitMqService>();
         services.AddScoped<ISimulationRepository, SimulationRepository>();
         services.AddSingleton<ISimulationEngine, StubSimulationEngine>();
         

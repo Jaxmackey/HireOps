@@ -1,5 +1,5 @@
 using HireOps.Api.Contracts;
-using HireOps.Application.Simulations.Commands;
+using HireOps.Application.Simulations.Commands.StartWave;
 using HireOps.Application.Simulations.DTOs;
 
 namespace HireOps.Api.Mappings;

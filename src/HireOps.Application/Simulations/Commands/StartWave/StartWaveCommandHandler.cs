@@ -4,7 +4,7 @@ using HireOps.Domain.Interfaces;
 using HireOps.Domain.Simulations;
 using MediatR;
 
-namespace HireOps.Application.Simulations.Commands;
+namespace HireOps.Application.Simulations.Commands.StartWave;
 
 public class StartWaveCommandHandler : IRequestHandler<StartWaveCommand, SimulationResultDto>
 {

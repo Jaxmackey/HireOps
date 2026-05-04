@@ -31,10 +31,20 @@ services:
     ports: ["5672:5672", "15672:15672"]
 
   seq:
-    image: datalust/seq:latest
+    image: datalust/seq:2024.3  # ✅ Рабочая версия (формат: год.месяц)
     environment:
       ACCEPT_EULA: "Y"
-    ports: ["5341:80", "5341:5341"]
+    ports:
+      - "53499:80"      # ✅ Высокий порт, маловероятен конфликт
+      - "53498:5341"    # Порт приёма логов
+    volumes:
+      - seq_data:/data  # ✅ Обязательно: хранилище индексов и метаданных
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/api/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   pg_data:
+  seq_data:             # ✅ Volume для Seq
