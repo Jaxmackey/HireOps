@@ -16,7 +16,6 @@ export class SignalrService {
   // Сигналы для реактивного UI
   public metrics = signal<Metrics | null>(null);
   public workers = signal<Record<string, number>>({});
-  public prefetch = signal(1);
 
   // 🔹 Инициализация с авто-реконнектом
   connect(baseUrl: string) {
@@ -40,11 +39,6 @@ export class SignalrService {
       this.workers.set(stats);
     });
 
-    // 🔹 Подписка на изменения prefetch
-    this.hubConnection.on('PrefetchUpdated', (value: number) => {
-      this.prefetch.set(value);
-    });
-
     // 🔹 Запуск соединения
     this.hubConnection.start()
       .then(() => console.log('✅ SignalR connected'))
@@ -57,10 +51,6 @@ export class SignalrService {
 
   removeWorker(queue: string, tenantId?: string) {
     return this.hubConnection?.invoke('RemoveWorker', queue, tenantId ? tenantId : null);
-  }
-
-  updatePrefetch(count: number) {
-    return this.hubConnection?.invoke('UpdatePrefetch', count);
   }
 
   disconnect() {

@@ -1,4 +1,5 @@
 ﻿using HireOps.Api.Hubs;
+using HireOps.Application.Workers;
 using HireOps.Domain.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 

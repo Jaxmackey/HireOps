@@ -49,17 +49,6 @@ interface Stage {
         </div>
       </div>
 
-      <!-- Нагрузка на человека -->
-      <div class="mb-4">
-        <div class="flex justify-between text-sm text-gray-400 mb-1">
-          <span>Задач на рекрутера </span>
-          <span class="font-mono text-blue-400">{{ currentBatchSize }}</span>
-        </div>
-        <input type="range" min="1" max="3" [ngModel]="batchSizeValue()" (change)="updateBatchSize($event)"
-          class="w-full accent-blue-500">
-        <p class="text-xs text-gray-500 mt-1">💡 Меньше = тщательнее разбор, больше = выше скорость</p>
-      </div>
-
       <!-- 🔹 НОВАЯ: Сводная таблица по всем этапам -->
       <div class="border-t border-gray-700 pt-4">
         <h4 class="text-sm font-semibold text-gray-300 mb-2">📊 Команда по этапам</h4>
@@ -91,7 +80,6 @@ export class TeamControlsComponent implements OnInit {
   ];
 
   selectedStageSignal = signal('sim.received');
-  batchSizeValue = signal(1);
   localWorkerCount = signal(0);
 
   constructor() {
@@ -112,10 +100,6 @@ export class TeamControlsComponent implements OnInit {
 
   get agentCount(): number {
     return this.localWorkerCount();
-  }
-
-  get currentBatchSize(): number {
-    return this.signalr.prefetch();
   }
 
   // 🔹 Helper: получить количество воркеров для любого этапа
@@ -144,10 +128,5 @@ export class TeamControlsComponent implements OnInit {
     } catch (err) {
       console.error('Failed to remove agent:', err);
     }
-  }
-
-  async updateBatchSize(event: Event) {
-    const value = (event.target as HTMLInputElement).valueAsNumber;
-    await this.signalr.updatePrefetch(value);
   }
 }

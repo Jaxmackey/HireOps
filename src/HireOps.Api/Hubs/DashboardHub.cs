@@ -74,7 +74,7 @@ public class DashboardHub : Hub
             _logger.LogInformation("➖ RemoveWorker requested for queue: {Queue}, tenant: {TenantId}", 
                 queue, tenantId?.ToString("N") ?? "all");
             
-            await _workerManager.RemoveWorkerAsync(queue);
+            await _workerManager.RemoveWorkerAsync(queue, tenantId);
             
             await Clients.All.SendAsync("WorkersUpdated", _workerManager.GetStats());
             _logger.LogInformation("✅ Worker removed from {Queue}, remaining: {Count}", 
@@ -85,12 +85,6 @@ public class DashboardHub : Hub
             _logger.LogError(ex, "❌ Error in RemoveWorker for queue {Queue}", queue);
             throw;
         }
-    }
-
-    public async Task UpdatePrefetch(int prefetchCount)
-    {
-        await Clients.All.SendAsync("PrefetchUpdated", prefetchCount);
-        _logger.LogInformation("🔧 Prefetch updated to {Count}", prefetchCount);
     }
     
     public override async Task OnConnectedAsync()

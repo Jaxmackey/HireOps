@@ -77,14 +77,6 @@ public class RabbitMqService : IRabbitMqService
             exchange, routingKey, typeof(T).Name);
     }
     
-    public async Task SetQosAsync(int prefetchCount, CancellationToken ct = default)
-    {
-        // prefetchCount = сколько сообщений консьюмер берёт "в работу" одновременно
-        // 0 = без лимита (не рекомендуется), 1 = строго по одному, 10-50 = оптимально для CPU-задач
-        await _channel.BasicQosAsync(prefetchSize: 0, prefetchCount: (ushort)prefetchCount, global: false, ct);
-        _logger.LogDebug("Set QoS: prefetchCount={Prefetch}", prefetchCount);
-    }
-    
     public async Task<ConsumerSubscription> ConsumeAsync<T>(
         string queue,
         Func<T, CancellationToken, Task> handler,
