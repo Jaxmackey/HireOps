@@ -13,6 +13,8 @@ public class ProcessScreeningCommandHandler(IRabbitMqService rabbitMq,
 {
     public async Task Handle(ProcessScreeningCommand request, CancellationToken ct)
     {
+        logger.LogInformation("🔍 [Tenant:{TenantId}] Screening applicant {ApplicantId}", 
+        request.TenantId, request.ApplicantId);
         var stopwatch = Stopwatch.StartNew();
         bool success = false;
         try

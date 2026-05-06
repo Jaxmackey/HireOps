@@ -11,7 +11,7 @@ public interface IRabbitMqService : IAsyncDisposable
     Task<ConsumerSubscription> ConsumeAsync<T>(string queue, Func<T, CancellationToken, Task> handler, CancellationToken ct = default) where T : class;
     
     Task<ConsumerSubscription> ConsumeAndMediateAsync<TMessage, TCommand>(
-        string queue, Func<TMessage, TCommand> mapToCommand, CancellationToken ct = default) 
+        string queue, Guid? tenantId, Func<TMessage, TCommand> mapToCommand, CancellationToken ct = default) 
         where TMessage : class where TCommand : IRequest;
     
     // 🔹 Новые методы управления

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TeamControlsComponent } from './components/worker-controls/worker-controls.component';
 import { SignalrService } from './services/signalr.service';
+import { TenantService } from './services/tenant.service';
 
 @Component({
   selector: 'app-root',
@@ -14,6 +15,7 @@ import { SignalrService } from './services/signalr.service';
 export class App implements OnInit, OnDestroy {
   protected readonly title = 'hireops-ui';
   protected readonly signalr = inject(SignalrService);
+  protected readonly tenant = inject(TenantService);
   private readonly apiUrl = ''; // Прокси
 
   // 🔹 Сигнал для блокировки кнопок волны
@@ -26,6 +28,13 @@ export class App implements OnInit, OnDestroy {
   private processingTimeout?: ReturnType<typeof setTimeout>;
 
   ngOnInit() {
+    this.tenant.initFromStorage();
+
+    if (!this.tenant.currentTenantId()) {
+      const demoTenant = crypto.randomUUID();
+      this.tenant.setTenant(demoTenant);
+      console.log('🎭 Demo tenant assigned:', demoTenant);
+    }
     this.signalr.connect(this.apiUrl);
   }
 

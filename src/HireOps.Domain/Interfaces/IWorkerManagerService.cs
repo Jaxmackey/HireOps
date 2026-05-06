@@ -12,6 +12,7 @@ public interface IWorkerManagerService
 
     Task<ConsumerSubscription> AddMediatedWorkerAsync<TMessage, TCommand>(
         string queue,
+        Guid? tenantId,
         Func<TMessage, TCommand> mapToCommand,
         CancellationToken ct = default) where TMessage : class where TCommand : IRequest;
 

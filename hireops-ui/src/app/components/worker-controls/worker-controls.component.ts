@@ -2,6 +2,14 @@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SignalrService } from '../../services/signalr.service';
+import { TenantService } from '../../services/tenant.service';
+
+// 🔹 Тип для этапа (удобно для итерации)
+interface Stage {
+  key: string;
+  label: string;
+  icon: string;
+}
 
 @Component({
   selector: 'app-team-controls',
@@ -11,21 +19,22 @@ import { SignalrService } from '../../services/signalr.service';
     <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
       <h3 class="text-lg font-semibold mb-4 text-white">👥 Управление командой</h3>
 
+      <!-- Выбор этапа -->
       <div class="mb-4">
         <label class="block text-sm text-gray-400 mb-1">Этап отбора</label>
         <select
-          [(ngModel)]="selectedStage"
-          (ngModelChange)="onStageChange()"
+          [(ngModel)]="selectedStageSignal"
           class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white">
-          <option value="sim.received">📥 Входящие отклики</option>
-          <option value="sim.screening">🔍 Первичный скрининг</option>
-          <option value="sim.tech">💻 Техническое интервью</option>
+          @for (stage of stages; track stage.key) {
+            <option [value]="stage.key">{{ stage.icon }} {{ stage.label }}</option>
+          }
         </select>
       </div>
 
+      <!-- Управление для выбранного этапа -->
       <div class="mb-4">
         <div class="flex justify-between text-sm text-gray-400 mb-1">
-          <span>Рекрутеров на этапе</span>
+          <span>Рекрутеров на этапе </span>
           <span class="font-mono text-green-400">{{ agentCount }}</span>
         </div>
         <div class="flex gap-2">
@@ -40,44 +49,65 @@ import { SignalrService } from '../../services/signalr.service';
         </div>
       </div>
 
-      <div>
+      <!-- Нагрузка на человека -->
+      <div class="mb-4">
         <div class="flex justify-between text-sm text-gray-400 mb-1">
-          <span>Задач на рекрутера</span>
+          <span>Задач на рекрутера </span>
           <span class="font-mono text-blue-400">{{ currentBatchSize }}</span>
         </div>
-        <input type="range" min="1" max="100" [ngModel]="batchSizeValue()" (change)="updateBatchSize($event)"
+        <input type="range" min="1" max="3" [ngModel]="batchSizeValue()" (change)="updateBatchSize($event)"
           class="w-full accent-blue-500">
         <p class="text-xs text-gray-500 mt-1">💡 Меньше = тщательнее разбор, больше = выше скорость</p>
+      </div>
+
+      <!-- 🔹 НОВАЯ: Сводная таблица по всем этапам -->
+      <div class="border-t border-gray-700 pt-4">
+        <h4 class="text-sm font-semibold text-gray-300 mb-2">📊 Команда по этапам</h4>
+        <div class="space-y-2">
+          @for (stage of stages; track stage.key) {
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-gray-400">{{ stage.icon }} {{ stage.label }}</span>
+              <span
+                class="font-mono px-2 py-0.5 rounded"
+                [class.text-green-400]="getWorkerCount(stage.key) > 0"
+                [class.text-gray-500]="getWorkerCount(stage.key) === 0">
+                {{ getWorkerCount(stage.key) }}
+              </span>
+            </div>
+          }
+        </div>
       </div>
     </div>
   `
 })
 export class TeamControlsComponent implements OnInit {
   private signalr = inject(SignalrService);
+  private tenant = inject(TenantService);
+  // 🔹 Список этапов (константа)
+  readonly stages: Stage[] = [
+    { key: 'sim.received', label: 'Входящие отклики', icon: '📥' },
+    { key: 'sim.screening', label: 'Первичный скрининг', icon: '🔍' },
+    { key: 'sim.tech', label: 'Техническое интервью', icon: '💻' }
+  ];
 
-  selectedStage = 'sim.received';
-  batchSizeValue = signal(10);
+  selectedStageSignal = signal('sim.received');
+  batchSizeValue = signal(1);
   localWorkerCount = signal(0);
 
   constructor() {
-    // 🔹 Реактивная подписка на изменения с сервера
     effect(() => {
       const workers = this.signalr.workers();
-      // Обновляем локальный счетчик ТОЛЬКО на основе данных с сервера
-      const count = workers?.[this.selectedStage];
-      if (count !== undefined) {
-        this.localWorkerCount.set(count);
-      }
+      const stage = this.selectedStageSignal();
+      const count = workers?.[stage] ?? 0;
+      this.localWorkerCount.set(count);
     });
   }
 
   ngOnInit() {
-    // Инициализация при загрузке (на случай, если данные уже есть)
     const workers = this.signalr.workers();
-    const count = workers?.[this.selectedStage];
-    if (count !== undefined) {
-      this.localWorkerCount.set(count);
-    }
+    const stage = this.selectedStageSignal();
+    const count = workers?.[stage] ?? 0;
+    this.localWorkerCount.set(count);
   }
 
   get agentCount(): number {
@@ -88,20 +118,18 @@ export class TeamControlsComponent implements OnInit {
     return this.signalr.prefetch();
   }
 
-  onStageChange() {
-    // При смене этапа просто перечитываем значение из сигнала (effect сработает сам)
-    const workers = this.signalr.workers();
-    const count = workers?.[this.selectedStage];
-    if (count !== undefined) {
-      this.localWorkerCount.set(count);
-    }
+  // 🔹 Helper: получить количество воркеров для любого этапа
+  getWorkerCount(stageKey: string): number {
+    return this.signalr.workers()?.[stageKey] ?? 0;
   }
 
-  // 🔹 ИСПРАВЛЕНО: Убрали оптимистичное обновление. Ждем ответа сервера.
   async addAgent() {
     try {
-      await this.signalr.addWorker(this.selectedStage);
-      // Сервер сам пришлет WorkersUpdated -> effect обновит localWorkerCount
+      // 🔹 Передаём tenantId, если он установлен
+      await this.signalr.addWorker(
+        this.selectedStageSignal(),
+        this.tenant.currentTenantId() ?? undefined
+      );
     } catch (err) {
       console.error('Failed to add agent:', err);
     }
@@ -109,8 +137,10 @@ export class TeamControlsComponent implements OnInit {
 
   async removeAgent() {
     try {
-      await this.signalr.removeWorker(this.selectedStage);
-      // Сервер сам пришлет WorkersUpdated -> effect обновит localWorkerCount
+      await this.signalr.removeWorker(
+        this.selectedStageSignal(),
+        this.tenant.currentTenantId() ?? undefined
+      );
     } catch (err) {
       console.error('Failed to remove agent:', err);
     }

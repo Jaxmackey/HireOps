@@ -13,15 +13,9 @@ public class ProcessHrDecisionCommandHandler(
 {
     public async Task Handle(ProcessHrDecisionCommand request, CancellationToken ct)
     {
+        logger.LogInformation("🤝 [Tenant:{TenantId}] HR decision for {ApplicantId}: {Decision}", 
+            request.TenantId, request.ApplicantId, request.Recommended ? "HIRED" : "REJECTED");
         await chaosService.SimulateAsync(ct);
-        if (request.Recommended)
-        {
-            logger.LogInformation("🤝 HR HIRED applicant {ApplicantId}", request.ApplicantId);
-        }
-        else
-        {
-            logger.LogInformation("❌ HR REJECTED applicant {ApplicantId}", request.ApplicantId);
-        }
         await Task.CompletedTask;
     }
 }

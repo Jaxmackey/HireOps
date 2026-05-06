@@ -131,6 +131,7 @@ public class RabbitMqService : IRabbitMqService
     
     public async Task<ConsumerSubscription> ConsumeAndMediateAsync<TMessage, TCommand>(
         string queue,
+        Guid? tenantId,
         Func<TMessage, TCommand> mapToCommand,
         CancellationToken ct = default)
         where TMessage : class
@@ -153,6 +154,18 @@ public class RabbitMqService : IRabbitMqService
                 var message = JsonSerializer.Deserialize<TMessage>(Encoding.UTF8.GetString(ea.Body.Span), _jsonOptions);
                 if (message != null)
                 {
+                    if (tenantId.HasValue)
+                    {
+                        // Предполагаем, что TMessage имеет свойство TenantId
+                        var msgTenantId = (Guid?)typeof(TMessage).GetProperty("TenantId")?.GetValue(message);
+                
+                        if (msgTenantId != tenantId.Value)
+                        {
+                            // 🔹 Не наше → возвращаем в очередь для других консьюмеров
+                            await _channel.BasicNackAsync(ea.DeliveryTag, false, true, ct);
+                            return;
+                        }
+                    }
                     var command = mapToCommand(message);
                     await mediator.Send(command, ct);
                     await _channel.BasicAckAsync(ea.DeliveryTag, false, ct);

@@ -12,7 +12,8 @@ public class ProcessTechReviewCommandHandler(
 {
     public async Task Handle(ProcessTechReviewCommand request, CancellationToken ct)
     {
-        logger.LogInformation("💻 Tech review for {ApplicantId} (score: {Score})", request.ApplicantId, request.Score);
+        logger.LogInformation("💻 [Tenant:{TenantId}] Tech review for {ApplicantId} (score: {Score})", 
+            request.TenantId, request.ApplicantId, request.Score);
         await chaosService.SimulateAsync(ct);
         await Task.Delay(150, ct);
         

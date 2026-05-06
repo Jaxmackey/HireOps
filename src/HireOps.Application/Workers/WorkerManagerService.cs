@@ -46,10 +46,11 @@ public class WorkerManagerService : IWorkerManagerService
     /// </summary>
     public async Task<ConsumerSubscription> AddMediatedWorkerAsync<TMessage, TCommand>(
         string queue,
+        Guid? tenantId,
         Func<TMessage, TCommand> mapToCommand,
         CancellationToken ct = default) where TMessage : class where TCommand : IRequest
     {
-        var subscription = await _rabbitMq.ConsumeAndMediateAsync(queue, mapToCommand, ct);
+        var subscription = await _rabbitMq.ConsumeAndMediateAsync(queue, tenantId, mapToCommand, ct);
         
         _activeConsumers.AddOrUpdate(
             queue,
