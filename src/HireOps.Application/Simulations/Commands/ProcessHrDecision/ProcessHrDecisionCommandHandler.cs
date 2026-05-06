@@ -1,4 +1,5 @@
-﻿using HireOps.Domain.Interfaces;
+﻿using System.Diagnostics;
+using HireOps.Domain.Interfaces;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -6,6 +7,7 @@ namespace HireOps.Application.Simulations.Commands.ProcessHrDecision;
 
 public class ProcessHrDecisionCommandHandler(
     ILogger<ProcessHrDecisionCommandHandler> logger,
+    IProcessingMetricsStore metrics,
     IChaosService chaosService)
     : IRequestHandler<ProcessHrDecisionCommand>
 {

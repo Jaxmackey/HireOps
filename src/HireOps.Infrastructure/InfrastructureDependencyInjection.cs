@@ -15,7 +15,8 @@ public static class InfrastructureDependencyInjection
     {
         services.AddDbContext<AppDbContext>(opt =>
             opt.UseNpgsql(config.GetConnectionString("Default")));
-
+        services.AddHttpClient();
+        services.AddSingleton<IRabbitMqMetricsService, RabbitMqMetricsService>();
         services.AddSingleton<IRabbitMqService, RabbitMqService>();
         services.AddScoped<ISimulationRepository, SimulationRepository>();
         services.AddSingleton<ISimulationEngine, StubSimulationEngine>();

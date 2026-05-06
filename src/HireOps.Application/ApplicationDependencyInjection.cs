@@ -1,4 +1,3 @@
-using HireOps.Application.Consumers;
 using HireOps.Application.Services;
 using HireOps.Application.Workers;
 using HireOps.Domain.Interfaces;
@@ -11,7 +10,7 @@ public static class ApplicationDependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.AddSingleton<IWorkerManagerService, WorkerManagerService>();
-        services.AddHostedService<PipelineConsumerService>();
+        services.AddSingleton<IProcessingMetricsStore, ProcessingMetricsStore>();
         services.AddSingleton<IChaosService, ChaosService>();
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(ApplicationDependencyInjection).Assembly));
         return services;

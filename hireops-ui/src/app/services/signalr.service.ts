@@ -6,7 +6,6 @@ export interface Metrics {
   latency: number;
   processedPerSec: number;
   processedTotal: number;
-  workers: Record<string, number>;
   throughput: Record<string, number>;
 }
 
@@ -31,12 +30,13 @@ export class SignalrService {
 
     // 🔹 Подписка на метрики
     this.hubConnection.on('MetricsUpdate', (data: Metrics) => {
+      console.log('📊 MetricsUpdate received (workers field ignored)');
       this.metrics.set(data);
-      if (data.workers) this.workers.set(data.workers);
     });
 
     // 🔹 Подписка на обновления воркеров
     this.hubConnection.on('WorkersUpdated', (stats: Record<string, number>) => {
+      console.log('👥 WorkersUpdated received:', stats);
       this.workers.set(stats);
     });
 
