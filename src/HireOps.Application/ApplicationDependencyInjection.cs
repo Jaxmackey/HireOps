@@ -12,6 +12,7 @@ public static class ApplicationDependencyInjection
         services.AddSingleton<IWorkerManagerService, WorkerManagerService>();
         services.AddSingleton<IProcessingMetricsStore, ProcessingMetricsStore>();
         services.AddSingleton<IChaosService, ChaosService>();
+        services.AddSingleton<IWaveTrackerService, WaveTrackerService>();
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(ApplicationDependencyInjection).Assembly));
         return services;
     }

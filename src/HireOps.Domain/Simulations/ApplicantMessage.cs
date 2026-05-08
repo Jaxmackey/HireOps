@@ -7,4 +7,5 @@ public record ApplicantMessage
     public string Skills { get; init; } = string.Empty;
     public int Experience { get; init; }
     public DateTime ReceivedAt { get; init; }
+    public string? WaveId { get; init; } 
 }

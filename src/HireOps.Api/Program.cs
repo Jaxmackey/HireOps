@@ -1,7 +1,7 @@
 using Serilog;
 using HireOps.Api.DependencyInjection;
-using HireOps.Api.Hubs;
 using HireOps.Application;
+using HireOps.Application.Hubs;
 using HireOps.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);

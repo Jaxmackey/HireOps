@@ -1,24 +1,61 @@
-using HireOps.Api.Contracts;
-using HireOps.Api.Mappings;
-using HireOps.Application.Services;
+using HireOps.Application.Workers;
 using HireOps.Domain.Interfaces;
 using HireOps.Domain.Simulations;
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HireOps.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class SimulationsController(IMediator mediator, ITenantContext tenantContext,
-    IChaosService chaosService) : ControllerBase
+public class SimulationsController(IWaveTrackerService waveTracker, 
+    IChaosService chaosService,
+    IWorkerManagerService workerManager,
+    IConfiguration config,
+    IRabbitMqService rabbitMq,
+    ILogger<SimulationsController> logger) : ControllerBase
 {
     [HttpPost("wave")]
-    public async Task<ActionResult<SimulationResponse>> StartWave([FromQuery] int applicantCount, CancellationToken ct)
+    public async Task<IActionResult> StartWave(
+        [FromQuery] int applicantCount, CancellationToken ct)
     {
-        var cmd = ApiMapper.ToCommand(applicantCount, tenantContext.GetTenantId());
-        var result = await mediator.Send(cmd, ct);
-        return Ok(result.ToResponse());
+        var stats = workerManager.GetStats();
+        var requiredStages = new[] { "sim.received", "sim.screening", "sim.tech" };
+        var emptyStages = requiredStages.Where(stage => 
+                stats.GetValueOrDefault(stage, 0) == 0)
+            .ToList();
+    
+        if (emptyStages.Any())
+        {
+            return BadRequest(new 
+            { 
+                error = "Cannot start wave: some stages have no workers",
+                emptyStages,
+                message = $"Add at least 1 worker to: {string.Join(", ", emptyStages)}"
+            });
+        }
+    
+        // Запуск трекинга
+        var waveId = Guid.NewGuid().ToString("N");
+        waveTracker.StartWave(waveId, applicantCount);
+    
+        // Публикация сообщений
+        var exchange = config["RabbitMQ:ExchangeName"] ?? "sim.pipeline";
+    
+        for (int i = 0; i < applicantCount; i++)
+        {
+            await rabbitMq.PublishAsync(
+                exchange: exchange,
+                routingKey: "sim.received",
+                message: new ApplicantMessage 
+                { 
+                    Id = Guid.NewGuid(), 
+                    TenantId = Guid.NewGuid(),
+                    Skills = new[] { "csharp", "angular", "react", "python" }[Random.Shared.Next(4)],
+                    WaveId = waveId // 👈 Передаём волна-айди в сообщение
+                }, ct);
+        }
+    
+        return Ok(new { waveId, message = $"Wave started: {applicantCount} applicants" });
     }
     
     [HttpPost("chaos/toggle")]
@@ -37,9 +74,7 @@ public class SimulationsController(IMediator mediator, ITenantContext tenantCont
     }
     
     [HttpPost("test/tenants")]
-    public async Task<IActionResult> TestMultiTenant(
-        [FromServices] IRabbitMqService rabbitMq,
-        [FromServices] ILogger<SimulationsController> logger)
+    public async Task<IActionResult> TestMultiTenant()
     {
         var tenantA = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var tenantB = Guid.Parse("22222222-2222-2222-2222-222222222222");

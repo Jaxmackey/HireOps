@@ -11,6 +11,7 @@ public interface IWorkerManagerService
     /// </summary>
     Task<ConsumerSubscription> AddWorkerAsync<T>(
         string queue, 
+        Guid? tenantId,
         Func<T, CancellationToken, Task> handler,
         CancellationToken ct = default) where T : class;
 

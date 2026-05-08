@@ -14,6 +14,8 @@ export class SignalrService {
   public hubConnection?: signalR.HubConnection;
 
   // Сигналы для реактивного UI
+  public waveProgress =
+    signal<{ total: number; processed: number; percent: number } | null>(null);
   public metrics = signal<Metrics | null>(null);
   public workers = signal<Record<string, number>>({});
 
@@ -37,6 +39,22 @@ export class SignalrService {
     this.hubConnection.on('WorkersUpdated', (stats: Record<string, number>) => {
       console.log('👥 WorkersUpdated received:', stats);
       this.workers.set(stats);
+    });
+
+    // 🔹 НОВЫЕ: Подписки на события волны (обрати внимание на camelCase!)
+    this.hubConnection.on('WaveStarted', (data: { waveId: string; totalCount: number }) => {
+      console.log('🌊 Wave started:', data);
+      // Можно обновить прогресс, если нужно
+    });
+
+    this.hubConnection.on('WaveProgress', (data: { waveId: string; total: number; processed: number; percent: number }) => {
+      console.log('📊 Wave progress:', data.percent + '%');
+      this.waveProgress.set({ total: data.total, processed: data.processed, percent: data.percent });
+    });
+
+    this.hubConnection.on('WaveCompleted', (data: { waveId: string }) => {
+      console.log('✅ Wave completed:', data.waveId);
+      this.waveProgress.set(null);
     });
 
     // 🔹 Запуск соединения

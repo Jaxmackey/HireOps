@@ -29,8 +29,8 @@ export class App implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.tenant.initFromStorage();
-
-    if (!this.tenant.currentTenantId()) {
+    var t = this.tenant.currentTenantId();
+    if (!t) {
       const demoTenant = crypto.randomUUID();
       this.tenant.setTenant(demoTenant);
       console.log('🎭 Demo tenant assigned:', demoTenant);
@@ -44,14 +44,20 @@ export class App implements OnInit, OnDestroy {
   }
 
   async startWave(count: number) {
-    // 🔹 Блокируем кнопки сразу
-    this.isProcessing.set(true);
+    // 🔹 ВАЛИДАЦИЯ: проверяем, что на всех этапах есть хотя бы 1 рекрутер
+    const workers = this.signalr.workers();
+    const requiredStages = ['sim.received', 'sim.screening', 'sim.tech'];
+    const emptyStages = requiredStages.filter(stage => (workers?.[stage] ?? 0) === 0);
 
-    // 🔹 Страховка: если ответ не придёт за 30с — разблокируем
-    this.processingTimeout = setTimeout(() => {
-      this.isProcessing.set(false);
-      console.warn('⚠️ Processing timeout, buttons unlocked');
-    }, 30000);
+    if (emptyStages.length > 0) {
+      alert(`❌ Нельзя запустить волну!\nНа следующих этапах нет рекрутеров:\n• ${emptyStages.join('\n• ')}`);
+      return;
+    }
+
+    // ✅ Валидация пройдена — блокируем и запускаем
+    this.isProcessing.set(true);
+    // 🔹 Сбрасываем старый прогресс и ставим начальный
+    this.signalr.waveProgress.set({ total: count, processed: 0, percent: 0 });
 
     try {
       const response = await fetch(`/api/simulations/wave?applicantCount=${count}`, {
@@ -60,17 +66,27 @@ export class App implements OnInit, OnDestroy {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        const error = await response.json().catch(() => ({}));
+        if (error.emptyStages) {
+          alert(`❌ ${error.message}`);
+        } else {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        // При ошибке разблокируем сразу
+        this.isProcessing.set(false);
+        this.signalr.waveProgress.set(null);
+        return;
       }
 
       console.log(`✅ Wave started: ${count} applicants`);
-      this.isProcessing.set(false);
-      if (this.processingTimeout) clearTimeout(this.processingTimeout);
+
+      // ❗ ВАЖНО: НЕ разблокируем кнопки здесь!
+      // Ждём события waveCompleted от сервера.
 
     } catch (err) {
       console.error('❌ Failed to start wave:', err);
       this.isProcessing.set(false);
-      if (this.processingTimeout) clearTimeout(this.processingTimeout);
+      this.signalr.waveProgress.set(null);
     }
   }
 

@@ -1,3 +1,3 @@
 ﻿namespace HireOps.Domain.Simulations;
 
-public record ScreeningResult(Guid ApplicantId, Guid TenantId, int Score);
+public record ScreeningResult(Guid ApplicantId, Guid TenantId, int Score, string? WaveId = null );

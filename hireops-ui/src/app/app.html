@@ -38,6 +38,33 @@
         </div>
       </div>
 
+      <!-- 🔹 НОВЫЙ: Прогресс-бар обработки волны (вставь после блока кнопок) -->
+      @if (signalr.waveProgress()) {
+        <div class="mt-4 pt-4 border-t border-gray-700">
+          <div class="flex justify-between text-xs text-gray-400 mb-1">
+            <span>🌊 Обработка волны </span>
+            <span class="font-mono text-green-400">{{ signalr.waveProgress()?.processed }} / {{ signalr.waveProgress()?.total }}</span>
+          </div>
+
+          <!-- Полоса прогресса -->
+          <div class="w-full bg-gray-700 rounded-full h-2.5 overflow-hidden">
+            <div
+              class="bg-green-500 h-2.5 rounded-full transition-all duration-300 ease-out"
+              [style.width.%]="signalr.waveProgress()?.percent ?? 0">
+            </div>
+          </div>
+
+          <!-- Текст статуса -->
+          <p class="text-xs text-gray-500 mt-1 text-center">
+            @if ((signalr.waveProgress()?.percent ?? 0) < 100) {
+              Обработано {{ signalr.waveProgress()?.percent }}%...
+            } @else {
+              ✅ Волна завершена!
+            }
+          </p>
+        </div>
+      }
+
       <!-- 🔹 Новая кнопка: Стресс-тест -->
       <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
         <h3 class="text-lg font-semibold mb-4">⚡ Режимы работы</h3>
