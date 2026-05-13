@@ -60,7 +60,8 @@ export class App implements OnInit, OnDestroy {
     this.signalr.waveProgress.set({ total: count, processed: 0, percent: 0 });
 
     try {
-      const response = await fetch(`/api/simulations/wave?applicantCount=${count}`, {
+      const response =
+        await fetch(`/api/simulations/wave?applicantCount=${count}&tenantId=${this.tenant.currentTenantId()}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });

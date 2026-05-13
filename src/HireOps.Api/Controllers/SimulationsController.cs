@@ -16,7 +16,9 @@ public class SimulationsController(IWaveTrackerService waveTracker,
 {
     [HttpPost("wave")]
     public async Task<IActionResult> StartWave(
-        [FromQuery] int applicantCount, CancellationToken ct)
+        [FromQuery] int applicantCount, 
+        [FromQuery] Guid tenantId, 
+        CancellationToken ct)
     {
         var stats = workerManager.GetStats();
         var requiredStages = new[] { "sim.received", "sim.screening", "sim.tech" };
@@ -49,7 +51,7 @@ public class SimulationsController(IWaveTrackerService waveTracker,
                 message: new ApplicantMessage 
                 { 
                     Id = Guid.NewGuid(), 
-                    TenantId = Guid.NewGuid(),
+                    TenantId = tenantId,
                     Skills = new[] { "csharp", "angular", "react", "python" }[Random.Shared.Next(4)],
                     WaveId = waveId // 👈 Передаём волна-айди в сообщение
                 }, ct);

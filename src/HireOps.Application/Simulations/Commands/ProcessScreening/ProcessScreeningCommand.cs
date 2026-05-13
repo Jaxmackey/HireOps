@@ -1,5 +1,4 @@
-﻿using HireOps.Domain.Simulations;
-using MediatR;
+﻿using MediatR;
 
 namespace HireOps.Application.Simulations.Commands.ProcessScreening;
 
