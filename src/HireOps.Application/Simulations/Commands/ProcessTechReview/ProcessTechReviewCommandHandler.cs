@@ -18,8 +18,7 @@ public class ProcessTechReviewCommandHandler(
         
         await chaosService.SimulateAsync(ct);
         await Task.Delay(150, ct);
-    
-        // 🔹 Инкремент прогресса за этап "tech"
+        
         if (!string.IsNullOrEmpty(request.WaveId))
         {
             await waveTracker.IncrementStageProgressAsync(request.WaveId, "sim.tech", ct);
@@ -27,7 +26,7 @@ public class ProcessTechReviewCommandHandler(
     
         await rabbitMq.PublishAsync(
             exchange: "sim.pipeline",
-            routingKey: "sim.tech",
+            routingKey: "sim.screening",
             message: new 
             { 
                 request.ApplicantId, 

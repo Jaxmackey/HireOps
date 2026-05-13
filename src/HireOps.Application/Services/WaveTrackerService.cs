@@ -7,19 +7,16 @@ namespace HireOps.Application.Services;
 
 public class WaveTrackerService(IHubContext<DashboardHub> hub) : IWaveTrackerService
 {
-    // 🔹 Храним: waveId → (total, currentCredit)
-    // credit = сумма "весов" обработанных сообщений (максимум = total × 1.0)
     private readonly ConcurrentDictionary<string, (int total, double credit)> _waves = new();
-    
     private string? _activeWaveId;
 
-    // 🔹 Веса этапов (в сумме = 1.0)
+    // 🔹 Веса этапов: 3 этапа = по 1/3 каждый (~0.3333)
+    // Сумма должна быть ровно 1.0 для корректного завершения
     private static readonly Dictionary<string, double> StageWeights = new()
     {
-        { "sim.received", 0.25 },
-        { "sim.screening", 0.25 },
-        { "sim.tech", 0.25 },
-        { "sim.hr", 0.25 }
+        { "sim.received", 1.0 / 3.0 },   // ~0.3333
+        { "sim.screening", 1.0 / 3.0 },  // ~0.3333
+        { "sim.tech", 1.0 / 3.0 }        // ~0.3334 (последний забирает остаток)
     };
 
     public void StartWave(string waveId, int totalCount)
@@ -30,39 +27,30 @@ public class WaveTrackerService(IHubContext<DashboardHub> hub) : IWaveTrackerSer
         hub.Clients.All.SendAsync("waveStarted", new { waveId, totalCount, processed = 0, percent = 0 });
     }
     
-    /// <summary>
-    /// Добавляет "кредит" прогресса за прохождение сообщения через этап.
-    /// </summary>
     public async Task IncrementStageProgressAsync(string waveId, string stageName, CancellationToken ct)
     {
         if (!_waves.TryGetValue(waveId, out var stats))
             return;
             
         if (!StageWeights.TryGetValue(stageName, out var weight))
-        {
-            // Неизвестный этап — игнорируем или логируем
-            return;
-        }
+            return; // Неизвестный этап — игнорируем
         
-        // 🔹 Добавляем вес этапа к кредиту волны
         var newCredit = stats.credit + weight;
         _waves[waveId] = (stats.total, newCredit);
         
         // 🔹 Считаем процент (ограничиваем 100%)
         var percent = Math.Min(100, (int)(newCredit * 100.0 / stats.total));
         
-        // 🔹 Отправляем прогресс (не чаще чем раз в 100мс можно добавить дебаунс, но для демо ок)
         await hub.Clients.All.SendAsync("waveProgress", new 
         { 
             waveId, 
             total = stats.total, 
-            // Для отображения "обработано" показываем целые сообщения: кредит / 1.0
             processed = (int)(newCredit / 1.0), 
             percent 
         }, ct);
 
-        // 🔹 Если кредит достиг максимума — волна завершена
-        if (newCredit >= stats.total * 1.0)
+        // 🔹 Завершение: кредит >= общего количества (с небольшим допуском на погрешность)
+        if (newCredit >= stats.total * 0.999)
         {
             _waves.TryRemove(waveId, out _);
             if (_activeWaveId == waveId) 

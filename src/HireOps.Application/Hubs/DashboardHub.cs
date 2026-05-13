@@ -36,7 +36,7 @@ public class DashboardHub(
                             waveTracker?.GetActiveWaveId())); // 👈 Передаём активный WaveId
                     break;
                     
-                case "sim.screening":
+                case "sim.tech":
                     await workerManager.AddMediatedWorkerAsync<ScreeningResult, ProcessTechReviewCommand>(
                         queue,
                         tenantId,
@@ -46,8 +46,8 @@ public class DashboardHub(
                             msg.Score,
                             waveTracker?.GetActiveWaveId())); // 👈 Передаём активный WaveId
                     break;
-                    
-                case "sim.tech":
+                
+                case "sim.screening":
                     await workerManager.AddMediatedWorkerAsync<TechReviewResult, ProcessHrDecisionCommand>(
                         queue,
                         tenantId,
@@ -56,25 +56,6 @@ public class DashboardHub(
                             msg.TenantId,
                             msg.Recommended,
                             waveTracker?.GetActiveWaveId())); // 👈 Передаём активный WaveId
-                    break;
-                    
-                case "sim.hr":
-                    await workerManager.AddWorkerAsync<HrDecisionResult>(
-                        queue,
-                        tenantId,
-                        async (msg, ct) => 
-                        {
-                            logger.LogInformation("🤝 Final decision for applicant {Id} (tenant {TenantId}, wave {WaveId}): {Decision}", 
-                                msg.ApplicantId, msg.TenantId, msg.WaveId ?? "*", msg.Hired ? "HIRED" : "REJECTED");
-                            
-                            // 🔹 Прямой консьюмер: тоже инкрементим трекер, если есть WaveId
-                            if (!string.IsNullOrEmpty(msg.WaveId) && waveTracker != null)
-                            {
-                                await waveTracker.IncrementStageProgressAsync(msg.WaveId,queue, ct);
-                            }
-                            
-                            await Task.CompletedTask;
-                        });
                     break;
                     
                 default:

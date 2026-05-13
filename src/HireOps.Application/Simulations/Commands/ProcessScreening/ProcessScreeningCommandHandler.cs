@@ -36,7 +36,7 @@ public class ProcessScreeningCommandHandler(
 
             await rabbitMq.PublishAsync(
                 exchange: "sim.pipeline",
-                routingKey: "sim.screening",
+                routingKey: "sim.tech",
                 message: nextMessage,
                 ct: ct);
             
@@ -45,7 +45,7 @@ public class ProcessScreeningCommandHandler(
             // 🔹 НОВОЕ: инкремент прогресса за этап "screening"
             if (!string.IsNullOrEmpty(request.WaveId))
             {
-                await waveTracker.IncrementStageProgressAsync(request.WaveId, "sim.screening", ct);
+                await waveTracker.IncrementStageProgressAsync(request.WaveId, "sim.received", ct);
             }
         }
         catch (Exception e)
