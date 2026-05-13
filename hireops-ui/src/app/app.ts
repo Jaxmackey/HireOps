@@ -18,23 +18,27 @@ export class App implements OnInit, OnDestroy {
   protected readonly tenant = inject(TenantService);
   private readonly apiUrl = ''; // Прокси
 
-  // 🔹 Сигнал для блокировки кнопок волны
-  protected isProcessing = signal(false);
-
-  // 🔹 Сигнал для режима хаоса (стресс-тест)
+  // 🔹 Сигнал для режима хаоса
   protected chaosMode = signal(false);
 
-  // 🔹 Таймер авто-разблокировки (защита от зависаний)
+  // 🔹 Таймер авто-разблокировки
   private processingTimeout?: ReturnType<typeof setTimeout>;
+
+  // 🔹 ВЫЧИСЛЯЕМОЕ СВОЙСТВО: вместо отдельного сигнала isProcessing
+  // Если waveProgress !== null → волна идёт → кнопки заблокированы
+  protected get isProcessing(): boolean {
+    return this.signalr.waveProgress() !== null;
+  }
 
   ngOnInit() {
     this.tenant.initFromStorage();
-    var t = this.tenant.currentTenantId();
+    const t = this.tenant.currentTenantId();
     if (!t) {
       const demoTenant = crypto.randomUUID();
       this.tenant.setTenant(demoTenant);
       console.log('🎭 Demo tenant assigned:', demoTenant);
     }
+
     this.signalr.connect(this.apiUrl);
   }
 
@@ -44,7 +48,7 @@ export class App implements OnInit, OnDestroy {
   }
 
   async startWave(count: number) {
-    // 🔹 ВАЛИДАЦИЯ: проверяем, что на всех этапах есть хотя бы 1 рекрутер
+    // 🔹 ВАЛИДАЦИЯ: проверяем рекрутеров
     const workers = this.signalr.workers();
     const requiredStages = ['sim.received', 'sim.screening', 'sim.tech'];
     const emptyStages = requiredStages.filter(stage => (workers?.[stage] ?? 0) === 0);
@@ -54,14 +58,11 @@ export class App implements OnInit, OnDestroy {
       return;
     }
 
-    // ✅ Валидация пройдена — блокируем и запускаем
-    this.isProcessing.set(true);
-    // 🔹 Сбрасываем старый прогресс и ставим начальный
+    // 🔹 Инициализация прогресса → автоматически заблокирует кнопки через геттер isProcessing
     this.signalr.waveProgress.set({ total: count, processed: 0, percent: 0 });
 
     try {
-      const response =
-        await fetch(`/api/simulations/wave?applicantCount=${count}&tenantId=${this.tenant.currentTenantId()}`, {
+      const response = await fetch(`/api/simulations/wave?applicantCount=${count}&tenantId=${this.tenant.currentTenantId()}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -73,25 +74,20 @@ export class App implements OnInit, OnDestroy {
         } else {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        // При ошибке разблокируем сразу
-        this.isProcessing.set(false);
+        // При ошибке сбрасываем прогресс → кнопки разблокируются
         this.signalr.waveProgress.set(null);
         return;
       }
 
       console.log(`✅ Wave started: ${count} applicants`);
-
-      // ❗ ВАЖНО: НЕ разблокируем кнопки здесь!
-      // Ждём события waveCompleted от сервера.
+      // ❗ Не разблокируем здесь — ждём, пока сервер сбросит waveProgress через signalr.service
 
     } catch (err) {
       console.error('❌ Failed to start wave:', err);
-      this.isProcessing.set(false);
       this.signalr.waveProgress.set(null);
     }
   }
 
-  // 🔹 НОВЫЙ МЕТОД: Переключение режима хаоса
   async toggleChaosMode() {
     try {
       const response = await fetch('/api/simulations/chaos/toggle', {
@@ -104,13 +100,11 @@ export class App implements OnInit, OnDestroy {
       }
 
       const result = await response.json();
-      // 🔹 Обновляем локальное состояние на основе ответа сервера
       this.chaosMode.set(result.enabled);
       console.log(result.message);
 
     } catch (err) {
       console.error('❌ Failed to toggle chaos mode:', err);
-      // В случае ошибки — инвертируем локальное состояние для визуального отката
       this.chaosMode.update(v => !v);
     }
   }

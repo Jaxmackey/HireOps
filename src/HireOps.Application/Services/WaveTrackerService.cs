@@ -41,7 +41,7 @@ public class WaveTrackerService(IHubContext<DashboardHub> hub) : IWaveTrackerSer
         // 🔹 Считаем процент (ограничиваем 100%)
         var percent = Math.Min(100, (int)(newCredit * 100.0 / stats.total));
         
-        await hub.Clients.All.SendAsync("waveProgress", new 
+        await hub.Clients.All.SendAsync("WaveProgress", new 
         { 
             waveId, 
             total = stats.total, 
@@ -56,7 +56,7 @@ public class WaveTrackerService(IHubContext<DashboardHub> hub) : IWaveTrackerSer
             if (_activeWaveId == waveId) 
                 _activeWaveId = null;
                 
-            await hub.Clients.All.SendAsync("waveCompleted", new { waveId }, ct);
+            await hub.Clients.All.SendAsync("WaveCompleted", new { waveId }, ct);
         }
     }
     
